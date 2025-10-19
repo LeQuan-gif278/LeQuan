@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cây hoa - Chúc mừng 20/10</title>
+<style>
+  body {
+    background-color: wheat;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    user-select: none;
+    overflow-x: hidden;
+  }
+  h1 {
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  #floweringTree {
+    border: 2px solid sienna;
+    background-color: #fff8dc;
+    display: block;
+    margin: 0 auto 15px;
+    box-shadow: 0 0 15px rgba(160, 82, 45, 0.5);
+  }
+  #congratsButton {
+    background-color: lightblue;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    color: black;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  #congratsButton:hover {
+    background-color: deepskyblue;
+  }
+  footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: black;
+  }
+  #greetingMessage {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    font-weight: bold;
+    color: crimson;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px crimson;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+  }
+  /* Flower petal falling */
+  .petal {
+    position: fixed;
+    width: 15px;
+    height: 15px;
+    background: radial-gradient(circle at center, lightcoral 40%, transparent 70%);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    opacity: 0.8;
+    pointer-events: none;
+    animation-timing-function: linear;
+    transform-origin: center;
+    will-change: transform;
+    z-index: 9;
+  }
+</style>
+</head>
+<body>
+
+<h1>Chúc mừng Ngày Phụ nữ Việt Nam 20/10</h1>
+<canvas id="floweringTree" width="800" height="600"></canvas>
+<br/>
+<button id="congratsButton">Gửi lời chúc</button>
+<h2 style="color:black">Bản quyền: @LeeVănQuân Link: (link web)</h2>
+
+<div id="greetingMessage">Một lời chúc đơn giản : xinh đẹp, hạnh phúc và thành công!</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('floweringTree');
+  const ctx = canvas.getContext('2d');
+
+  const BRANCH_LENGTH = 80;
+  const MIN_BRANCH = 5;
+  const MAGIC = 10;
+  const FLOWER_RADIUS = 4;
+
+  ctx.lineCap = 'round';
+
+  // Stack to hold branches for animation
+  let branches = [];
+
+  // Initialize with root branch
+  function initBranches() {
+    branches = [{
+      x: canvas.width / 2,
+      y: canvas.height - 50,
+      length: BRANCH_LENGTH,
+      angle: -90,
+      depth: 0,
+      parentEndX: null,
+      parentEndY: null,
+    }];
+  }
+
+  // Draw one branch segment
+  function drawBranchSegment(branch) {
+    const { x, y, length, angle } = branch;
+    const rad = angle * Math.PI / 180;
+
+    const endX = x + length * Math.cos(rad);
+    const endY = y + length * Math.sin(rad);
+
+    // Set color and width based on length
+    if (length > 12) {
+      ctx.strokeStyle = 'sienna';
+      ctx.lineWidth = Math.max(1, length / 10);
+    } else if (length > MIN_BRANCH) {
+      ctx.strokeStyle = Math.random() < 0.5 ? 'lightcoral' : 'snow';
+      ctx.lineWidth = Math.max(1, length / 3);
+    } else {
+      ctx.strokeStyle = Math.random() < 0.5 ? 'lightcoral' : 'snow';
+      ctx.lineWidth = Math.max(1, length / 2);
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(endX, endY);
+    ctx.shadowColor = 'rgba(160, 82, 45, 0.4)';
+    ctx.shadowBlur = 3;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    return { endX, endY };
+  }
+
+  // Draw flower at given position
+  function drawFlower(x, y) {
+    const petals = 5;
+    const petalRadius = FLOWER_RADIUS;
+    ctx.save();
+    ctx.translate(x, y);
+
+    for (let i = 0; i < petals; i++) {
+      const angle = (i * 2 * Math.PI) / petals;
+      const petalX = Math.cos(angle) * petalRadius;
+      const petalY = Math.sin(angle) * petalRadius;
+      ctx.beginPath();
+      ctx.fillStyle = Math.random() < 0.5 ? 'snow' : 'lightcoral';
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(petalX / 2, petalY / 2, petalX, petalY);
+      ctx.quadraticCurveTo(petalX / 2, petalY / 2, 0, 0);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  // Generate child branches from a given branch
+  function generateChildBranches(branch) {
+    const { endX, endY, length, angle, depth } = branch;
+
+    // Stop condition
+    if (length < MIN_BRANCH) {
+      // Draw flower at branch end
+      drawFlower(endX, endY);
+      return [];
+    }
+
+    // Randomness for angle and length reduction
+    const angleVariation = 15;
+    const lengthReduction = 0.7 + Math.random() * 0.15;
+
+    // Left branch
+    const leftAngle = angle - (angleVariation + Math.random() * angleVariation);
+    const leftLength = length * lengthReduction;
+
+    // Right branch
+    const rightAngle = angle + (angleVariation + Math.random() * angleVariation);
+    const rightLength = length * lengthReduction;
+
+    return [
+      {
+        x: endX,
+        y: endY,
+        length: leftLength,
+        angle: leftAngle,
+        depth: depth + 1,
+      },
+      {
+        x: endX,
+        y: endY,
+        length: rightLength,
+        angle: rightAngle,
+        depth: depth + 1,
+      }
+    ];
+  }
+
+  // Animation variables
+  let activeBranches = [];
+  let nextBranches = [];
+
+  function animate() {
+    if (activeBranches.length === 0 && nextBranches.length === 0) {
+      // Finished drawing whole tree, draw petal field
+      drawPetalField(50, canvas.width / 2 - 120, canvas.width / 2 + 120, canvas.height - 30);
+      return;
+    }
+
+    // Draw current active branches and generate next branches
+    let newNextBranches = [];
+    activeBranches.forEach(branch => {
+      const ends = drawBranchSegment(branch);
+      branch.endX = ends.endX;
+      branch.endY = ends.endY;
+
+      const children = generateChildBranches(branch);
+      newNextBranches = newNextBranches.concat(children);
+    });
+
+    activeBranches = nextBranches;
+    nextBranches = newNextBranches;
+
+    // Delay next frame for smooth animation
+    setTimeout(() => {
+      requestAnimationFrame(animate);
+    }, 150);
+  }
+
+  // Draw petal field on ground
+  function drawPetalField(count, left, right, baseY) {
+    for (let i = 0; i < count; i++) {
+      const x = random(left, right);
+      const y = baseY + random(-10, 10);
+      const radius = random(1.5, 3);
+
+      ctx.beginPath();
+      ctx.fillStyle = Math.random() < 0.5 ? 'snow' : 'lightcoral';
+      ctx.shadowColor = 'rgba(255,182,193,0.5)';
+      ctx.shadowBlur = 5;
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // Utility random helper
+  function random(min, max) {
+    return Math.random() * (max - min) + min;
+  }
+
+  // Clear and start animation
+  function startDrawing() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+
+    // Root branch
+    activeBranches = [{
+      x: canvas.width / 2,
+      y: canvas.height - 50,
+      length: BRANCH_LENGTH,
+      angle: -90,
+      depth: 0,
+    }];
+    nextBranches = [];
+
+    animate();
+  }
+
+  // Flower petal falling effect
+  class Petal {
+    constructor() {
+      this.el = document.createElement('div');
+      this.el.classList.add('petal');
+      this.reset();
+      document.body.appendChild(this.el);
+    }
+
+    reset() {
+      this.x = Math.random() * window.innerWidth;
+      this.y = -20 - Math.random() * 100;
+      this.size = 8 + Math.random() * 8;
+      this.speedY = 1 + Math.random() * 2;
+      this.speedX = 0.5 - Math.random();
+      this.rotation = Math.random() * 360;
+      this.rotationSpeed = (Math.random() - 0.5) * 2;
+      this.el.style.width = this.size + 'px';
+      this.el.style.height = this.size + 'px';
+      this.el.style.opacity = 0.7 + Math.random() * 0.3;
+      this.updatePosition();
+    }
+
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.rotation += this.rotationSpeed;
+
+      if (this.y > window.innerHeight + 20 || this.x < -50 || this.x > window.innerWidth + 50) {
+        this.reset();
+      }
+      this.updatePosition();
+    }
+
+    updatePosition() {
+      this.el.style.transform = `translate(${this.x}px, ${this.y}px) rotate(${this.rotation}deg)`;
+    }
+
+    remove() {
+      this.el.remove();
+    }
+  }
+
+  // Manage petals
+  let petals = [];
+  const PETAL_COUNT = 40;
+  let petalsActive = false;
+
+  function startPetalFall() {
+    if (petalsActive) return;
+    petalsActive = true;
+    petals = [];
+    for (let i = 0; i < PETAL_COUNT; i++) {
+      petals.push(new Petal());
+    }
+    animatePetals();
+  }
+
+  function animatePetals() {
+    if (!petalsActive) return;
+    petals.forEach(petal => petal.update());
+    requestAnimationFrame(animatePetals);
+  }
+
+  function stopPetalFall() {
+    petalsActive = false;
+    petals.forEach(p => p.remove());
+    petals = [];
+  }
+
+  // Show greeting message with fade in/out and start petals
+  function showGreeting() {
+    const msg = document.getElementById('greetingMessage');
+    msg.style.opacity = '1';
+    startPetalFall();
+
+    // Hide message and petals after 7 seconds
+    setTimeout(() => {
+      msg.style.opacity = '0';
+      setTimeout(() => {
+        stopPetalFall();
+      }, 500);
+    }, 7000);
+  }
+
+  document.getElementById('congratsButton').addEventListener('click', () => {
+    showGreeting();
+  });
+
+  // Start drawing tree on load
+  startDrawing();
+})();
+</script>
+
+</body>
+</html>
